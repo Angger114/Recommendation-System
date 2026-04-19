@@ -1,0 +1,272 @@
+<!-- templates/recommendation.html -->
+<!DOCTYPE html>
+<html lang="en" data-theme="corporate">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendation System</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .recommend-card {
+        transition: all 0.25s ease;
+        border-radius: 14px;
+        }
+
+        .recommend-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
+
+        .fade-in {
+        animation: fadeInUp 0.4s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-primary mb-2">🛍️ Recommendation System</h1>
+            <p class="text-lg text-gray-600">Get personalized product recommendations</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Input Panel -->
+            <div class="lg:col-span-1">
+                <div class="card bg-base-100 shadow-lg sticky top-4">
+                    <div class="card-body">
+                        <h2 class="card-title">Recommendation Input</h2>
+                        <form id="recommendation-form" class="space-y-4">
+                            <!-- User Section -->
+                            <div class="collapse collapse-plus bg-base-200">
+                                <input type="checkbox" checked>
+                                <div class="collapse-title font-medium">User Information</div>
+                                <div class="collapse-content">
+                                    <div class="form-control">
+                                        <label class="label">
+                                            <span class="label-text">User ID</span>
+                                        </label>
+                                        <input type="text" id="user-id" class="input input-bordered" placeholder="user_00001" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- button Section -->
+                            <div class="form-control pt-4">
+                                <button type="submit" class="btn btn-primary w-full">
+                                    <span id="predict-btn-text">Get Recommendations</span>
+                                    <span id="predict-spinner" class="loading loading-spinner loading-sm hidden"></span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Panel -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Recommendations Card -->
+                <div class="card bg-base-100 shadow-lg">
+                    <div class="card-body">
+                        <h2 class="card-title">🤑 Recommended Products</h2>
+                        <div class="flex flex-col items-center py-6">
+                            <div id="recommendation-container" class="grid grid-cols-2 md:grid-cols-3 gap-4 py-4">
+                                <div class="col-span-full text-center text-gray-400">No recommendations yet. Enter a user ID above.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Insights Card -->
+                <div class="card bg-base-100 shadow-lg">
+                    <div id="insights-container" class="card-body">
+                            <div class="alert alert-info">
+                                <span>Enter a user ID to get recommendations</span>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Recommendation Logic
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Initialize form
+            const form = document.getElementById('recommendation-form');
+            form.addEventListener('submit', handleRecommendation);
+            
+            // Initialize chart
+            
+            async function handleRecommendation(e) {
+                e.preventDefault();
+                
+                document.getElementById('recommendation-container').innerHTML = `
+                    <div class="col-span-full text-center py-6">
+                        <span class="loading loading-spinner loading-md"></span>
+                        <p class="text-gray-500 mt-2">Fetching recommendations...</p>
+                    </div>
+                `;
+                const btnText = document.getElementById('predict-btn-text');
+                const spinner = document.getElementById('predict-spinner');
+                
+                // Get form values
+                const userId = document.getElementById('user-id').value.trim();
+
+                if (!userId) {
+                    showAlert('User ID is required', 'error');
+                    return;
+                }
+                
+                // UI state
+                btnText.textContent = 'Loading...';
+                spinner.classList.remove('hidden');
+                clearAlerts();
+                
+                try {
+                    const response = await fetch('/api/recommend', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_id: userId
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({}));
+                        throw new Error(error.message || 'Recommendation failed');
+                    }
+                    
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch {
+                        throw new Error("Invalid server response");
+                    }
+                                        
+                    // Update UI
+                    updateRecommendations(data);
+                    document.getElementById('recommendation-container')
+                        .scrollIntoView({ behavior: 'smooth' });
+
+                } catch (error) {
+                    console.error('Recommendation error:', error);
+                    document.getElementById('recommendation-container').innerHTML = `
+                        <div class="alert alert-error">
+                            Failed to load recommendations
+                        </div>
+                    `;
+                    showAlert(`Error: ${error.message}`, 'error');
+                } finally {
+                    btnText.textContent = 'Get Recommendations';
+                    spinner.classList.add('hidden');
+                    document.getElementById('user-id').value = '';
+                }
+            }
+            
+            function updateRecommendations(data) {
+                const container = document.getElementById('recommendation-container');
+                
+                if (!Array.isArray(data.recommendations)) {
+                    container.innerHTML = `
+                        <div class="alert alert-error">
+                            Invalid response from server
+                        </div>
+                    `;
+                    return;
+                }
+                if (!data.recommendations || data.recommendations.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-6 text-gray-400">
+                            😕 No recommendations found for this user
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.recommendations.slice(0, 6).map((item, i) => {
+
+                    const percent = ((item.score || 0) * 100).toFixed(1);
+
+                    const rankColor = i === 0 ? '#FFD700' :
+                                    i === 1 ? '#C0C0C0' :
+                                    i === 2 ? '#CD7F32' : '#4f6df5';
+
+                    return `
+                        <div class="card bg-base-100 shadow recommend-card fade-in" 
+                            style="animation-delay: ${i * 0.05}s">
+
+                            <div class="card-body">
+                                <h2 class="card-title flex items-center gap-2">
+                                    <span style="
+                                        background:${rankColor};
+                                        color:white;
+                                        padding:4px 8px;
+                                        border-radius:6px;
+                                        font-size:12px;
+                                    ">
+                                        #${i + 1}
+                                    </span>
+                                    ${item.product_id}
+                                </h2>
+
+                                <p class="text-sm text-gray-500">
+                                    Match: ${percent}%
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            
+            function showAlert(message, type) {
+                clearAlerts();
+                
+                const typeClasses = {
+                    'error': 'alert-error',
+                    'success': 'alert-success',
+                    'info': 'alert-info'
+                };
+                
+                const alert = document.createElement('div');
+                alert.className = `alert ${typeClasses[type] || 'alert-info'} mt-4`;
+                alert.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>${message}</span>
+                `;
+                
+                document.getElementById('insights-container').prepend(alert);
+            }
+            
+            function clearAlerts() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    if (alert.closest('#insights-container')) {
+                        alert.remove();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
