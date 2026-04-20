@@ -15,8 +15,9 @@
 {
   "user_id": "user_00001",
 }
-
+```
 ## Build image
 ### Use this command to build the docker image for lambda!
 ```bash
 docker buildx build --platform linux/amd64 --provenance=false -t docker-image:test .
+```
