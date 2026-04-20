@@ -9,7 +9,6 @@
 ### Dynamo Tables
 `USERS_TABLE=techmart-users`<br/>
 
-## recommendation Test
 ## API Endpoint
 ### POST /api/recommend
 ```json
