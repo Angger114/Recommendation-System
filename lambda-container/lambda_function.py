@@ -17,9 +17,7 @@ logger.setLevel(logging.INFO)
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
-# 1. DEFINE THE MODEL CLASS IN THE SAME FILE
-
-# 2. MODEL LOADING WITH PROPER ERROR HANDLING
+# 1. MODEL LOADING WITH PROPER ERROR HANDLING
 MODEL = None
 
 def load_model(bucket: str, key: str):
@@ -49,8 +47,8 @@ def load_model(bucket: str, key: str):
         logger.error(f"Model load failed: {str(e)}")
         raise Exception("MODEL LOAD FAILED")
 
-# 3. IMPLEMENT THE MISSING get_features FUNCTION
-def get_features(user_id: str, product_id: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+#2. IMPLEMENT THE MISSING get_features FUNCTION
+'''def get_features(user_id: str, product_id: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Retrieve user and product features from DynamoDB or other sources
     Returns tuple of (user_features, product_features)
@@ -92,7 +90,7 @@ def get_user_features(user_id: str) -> Dict[str, Any]:
             
     except Exception as e:
         logger.error(f"Error getting user features: {str(e)}")
-        return get_default_user_features()
+        return get_default_user_features()'''
 
 def get_product_features(product_id: str) -> Dict[str, Any]:
     try:
@@ -177,7 +175,7 @@ def get_fallback_features(user_id: str, product_id: str) -> Tuple[Dict[str, Any]
     
     return user_features, product_features
 
-# 4. ENHANCED LAMBDA HANDLER
+# 3. ENHANCED LAMBDA HANDLER
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         # Parse input with validation
