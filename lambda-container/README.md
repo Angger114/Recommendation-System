@@ -17,7 +17,7 @@
 }
 ```
 ## Build image
-### Use this command to build the docker image for lambda!
+### Use this command to build the docker image for lambda! (change the image name and tag)
 ```bash
-docker buildx build --platform linux/amd64 --provenance=false -t docker-image:test .
+docker buildx build --platform linux/amd64 --provenance=false -t <docker-image:test> .
 ```
