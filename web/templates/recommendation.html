@@ -209,27 +209,30 @@
                                     i === 2 ? '#CD7F32' : '#4f6df5';
 
                     return `
-                        <div class="card bg-base-100 shadow recommend-card fade-in" 
-                            style="animation-delay: ${i * 0.05}s">
+                        <div class="card bg-base-100 shadow recommend-card fade-in p-4">
 
-                            <div class="card-body">
-                                <h2 class="card-title flex items-center gap-2">
-                                    <span style="
-                                        background:${rankColor};
-                                        color:white;
-                                        padding:4px 8px;
-                                        border-radius:6px;
-                                        font-size:12px;
-                                    ">
-                                        #${i + 1}
-                                    </span>
-                                    ${item.product_id}
-                                </h2>
-
-                                <p class="text-sm text-gray-500">
-                                    Match: ${percent}%
-                                </p>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="badge badge-primary">#${i + 1}</span>
+                                <span class="text-xs text-gray-400">
+                                    ${(item.score * 100).toFixed(1)}%
+                                </span>
                             </div>
+
+                            <div class="font-semibold text-lg">
+                                ${item.name || item.product_id}
+                            </div>
+
+                            <div class="text-xs text-gray-400 mb-2">
+                                ${item.product_id}
+                            </div>
+
+                            <div class="text-sm text-gray-500 space-y-1">
+                                <div>Brand: ${item.brand || '-'}</div>
+                                <div>Category: ${item.category || '-'}</div>
+                                <div>Price: ${item.price_range || '-'}</div>
+                                <div>Popularity: ${item.popularity || 0}</div>
+                            </div>
+
                         </div>
                     `;
                 }).join('');

@@ -14,6 +14,11 @@ class ContentBasedRecommender:
     def fit(self, products_df):
         """Train content-based model"""
         
+        if products_df is None or len(products_df) == 0:
+            raise ValueError("products_df is empty")
+        if 'product_id' not in products_df.columns:
+            raise ValueError("Missing 'product_id' column")
+        
         # Create content features
         products_df['content'] = (
             products_df['category'] + ' ' + 
@@ -51,9 +56,13 @@ class ContentBasedRecommender:
                 
             return similar_products
             
-        except Exception as e:
-            print(f"Error in content recommend: {e}")
+        except IndexError:
+            logger.warning(f"Product {product_id} not found in database")
             return []
+        except Exception as e:
+            logger.error(f"Error in content-based recommendation: {e}", exc_info=True)
+            return []
+   
 
 # Testing
 
@@ -67,6 +76,11 @@ class CollaborativeRecommender:
         
     def fit(self, user_item_df):
         """Train collaborative filtering model"""
+        
+        if user_item_df is None or len(user_item_df) == 0:
+            raise ValueError("user_item_df is empty")
+        if 'user_id' not in user_item_df.columns:
+            raise ValueError("Missing 'user_id' column")
         
         # Create user-item matrix
         self.user_item_matrix = user_item_df.pivot_table(
@@ -106,8 +120,11 @@ class CollaborativeRecommender:
                 
             return recommendations
             
+        except KeyError:
+            print(f"User {user_id} not found - cold start")
+            return []
         except Exception as e:
-            print(f"Error in collaborative recommend: {e}")
+            print(f"Error: {e}")
             return []
 
 # Hybrid recommender
@@ -129,8 +146,19 @@ class HybridRecommender:
         
         # If no collaborative recommendations, use content-based
         if not collab_recs:
+            
             # Get user's most recent purchase for content-based
-            # This would require additional logic
+            print(f"No collab recs for {user_id}, using popular products")
+            
+            # Return popular products instead of empty
+            if hasattr(self.content_model, 'product_features') and self.content_model.product_features is not None:
+                popular = self.content_model.product_features.nlargest(n_recommendations, 'total_interactions')
+                return [{
+                    'product_id': row['product_id'], 
+                    'score': 1.0, 
+                    'type': 'popular'
+                    } for _, row in popular.iterrows()]
+                
             return []
         
         # Weight and combine recommendations

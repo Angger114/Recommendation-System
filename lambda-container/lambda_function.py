@@ -8,6 +8,7 @@ import sys
 import random
 from typing import Dict, Any, Tuple, Optional
 
+
 # Configure logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -17,35 +18,6 @@ s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
 # 1. DEFINE THE MODEL CLASS IN THE SAME FILE
-class HybridRecommender:
-    """Complete implementation of the model class"""
-    def __init__(self):
-        self.model_version = "1.0"
-        
-    @staticmethod
-    def predict_purchase_probability(user_features, product_features):
-        """Enhanced prediction logic with proper scoring"""
-        base_score = 0.5
-        
-        # User features scoring
-        if user_features.get('purchase_history', 0) > 10:
-            base_score += 0.25
-        elif user_features.get('purchase_history', 0) > 5:
-            base_score += 0.15
-            
-        if user_features.get('avg_spending', 0) > 200:
-            base_score += 0.1
-            
-        # Product features scoring
-        if product_features.get('price', 100) < 50:
-            base_score += 0.15
-        elif product_features.get('price', 100) < 100:
-            base_score += 0.1
-            
-        if product_features.get('quality', 3) >= 4.5:
-            base_score += 0.2
-            
-        return min(max(base_score, 0), 1)
 
 # 2. MODEL LOADING WITH PROPER ERROR HANDLING
 MODEL = None
@@ -123,30 +95,40 @@ def get_user_features(user_id: str) -> Dict[str, Any]:
         return get_default_user_features()
 
 def get_product_features(product_id: str) -> Dict[str, Any]:
-    """Get product features from DynamoDB"""
     try:
-        # Assuming you have a products table
         products_table = dynamodb.Table(os.environ.get('PRODUCTS_TABLE', 'ProductEmbeddings'))
-        
+
         response = products_table.get_item(Key={'product_id': product_id})
-        
+
         if 'Item' in response:
             item = response['Item']
+
+            embedding_raw = item.get('embedding', '{}')
+            product_name = item.get('product_name', product_id)
+
+            if isinstance(embedding_raw, str):
+                embedding = json.loads(embedding_raw)
+            else:
+                embedding = embedding_raw
+
+            brand = embedding.get('brand', 'Unknown')
+            category = embedding.get('category', 'Product')
+            price_range = embedding.get('price_range', 'medium')
+            popularity = embedding.get('popularity', 0)
+
             return {
-                'price': float(item.get('price', 100)),
-                'quality': float(item.get('rating', 3.0)),
-                'category': item.get('category', 'unknown'),
-                'brand': item.get('brand', 'unknown'),
-                'popularity': float(item.get('popularity_score', 0.5)),
-                'stock_level': int(item.get('stock', 0))
+                'name': product_name,
+                'category': category,
+                'brand': brand,
+                'price_range': price_range,
+                'popularity': popularity
             }
-        else:
-            logger.warning(f"Product {product_id} not found in database")
-            return get_default_product_features()
-            
+
+        return {}
+
     except Exception as e:
         logger.error(f"Error getting product features: {str(e)}")
-        return get_default_product_features()
+        return {}
 
 def get_default_user_features() -> Dict[str, Any]:
     """Default user features when data is not available"""
@@ -207,7 +189,6 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 body = event['body']
             
         user_id = body.get('user_id', 'default')
-        product_id = body.get('product_id', 'default')
         
         # Initialize model
         model = load_model(
@@ -218,10 +199,30 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Get features (with fallback values)
         #user_features, product_features = get_features(user_id, product_id)
         
-        # Make prediction
+        # get recommendation
         try:
             recommendations = model.recommend(user_id, n_recommendations=5)
             source = 'ml_model'
+
+            enriched_recommendations = []
+
+            for item in recommendations:
+                pid = item.get('product_id')
+
+                product_features = get_product_features(pid)
+
+                enriched_item = {
+                    **item,
+                    'name': product_features.get('name', item.get('product_id')),
+                    'category': product_features.get('category', '-'),
+                    'brand': product_features.get('brand', '-'),
+                    'price_range': product_features.get('price_range', '-'),
+                    'popularity': product_features.get('popularity', 0)
+                }
+
+                enriched_recommendations.append(enriched_item)
+
+            recommendations = enriched_recommendations
         except Exception as e:
             logger.warning(f"Model prediction failed: {str(e)}")
             recommendations = []
