@@ -1,4 +1,4 @@
-# Flask app
+# Flask App
 
 ## Environment variable
 
