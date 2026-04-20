@@ -1,4 +1,4 @@
-# Lambda inference with container
+# Lambda Inference with Container
 
 ## Environment variable
 
@@ -10,7 +10,8 @@
 `USERS_TABLE=techmart-users`<br/>
 
 ## recommendation Test
-### Method POST Testing
+## API Endpoint
+### POST /api/recommend
 ```json
 {
   "user_id": "user_00001",
