@@ -48,49 +48,6 @@ def load_model(bucket: str, key: str):
         raise Exception("MODEL LOAD FAILED")
 
 #2. IMPLEMENT THE MISSING get_features FUNCTION
-'''def get_features(user_id: str, product_id: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """
-    Retrieve user and product features from DynamoDB or other sources
-    Returns tuple of (user_features, product_features)
-    """
-    try:
-        # Get user features from DynamoDB
-        user_features = get_user_features(user_id)
-        
-        # Get product features from DynamoDB
-        product_features = get_product_features(product_id)
-        
-        return user_features, product_features
-        
-    except Exception as e:
-        logger.warning(f"Error getting features: {str(e)}. Using fallback features")
-        return get_fallback_features(user_id, product_id)
-
-def get_user_features(user_id: str) -> Dict[str, Any]:
-    """Get user features from DynamoDB"""
-    try:
-        # Assuming you have a users table
-        users_table = dynamodb.Table(os.environ.get('USERS_TABLE', 'techmart-users'))
-        
-        response = users_table.get_item(Key={'user_id': user_id})
-        
-        if 'Item' in response:
-            item = response['Item']
-            return {
-                'purchase_history': int(item.get('purchase_count', 0)),
-                'avg_spending': float(item.get('avg_spending', 0)),
-                'age': int(item.get('age', 25)),
-                'gender': item.get('gender', 'unknown'),
-                'location': item.get('location', 'unknown'),
-                'last_purchase_days': int(item.get('last_purchase_days', 30))
-            }
-        else:
-            logger.warning(f"User {user_id} not found in database")
-            return get_default_user_features()
-            
-    except Exception as e:
-        logger.error(f"Error getting user features: {str(e)}")
-        return get_default_user_features()'''
 
 def get_product_features(product_id: str) -> Dict[str, Any]:
     try:
