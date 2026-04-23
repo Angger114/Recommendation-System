@@ -35,10 +35,8 @@ def clean_embedding(raw):
     if not raw:
         return {}
 
-    # 🔥 fix "" → "
     fixed = raw.replace('""', '"')
 
-    # 🔥 remove outer quotes
     if fixed.startswith('"') and fixed.endswith('"'):
         fixed = fixed[1:-1]
 
@@ -48,7 +46,6 @@ def clean_embedding(raw):
         print("JSON parse error:", e)
         return {}
 
-    # 🔥 clean semua string value
     cleaned = {
         k: v.strip() if isinstance(v, str) else v
         for k, v in data.items()
@@ -87,7 +84,6 @@ def lambda_handler(event, context):
             # =========================
             embedding_dict = clean_embedding(row.get("embedding"))
 
-            # skip kalau product_id kosong
             if not product_id:
                 continue
 
