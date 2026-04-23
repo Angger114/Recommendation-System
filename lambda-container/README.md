@@ -13,7 +13,7 @@
 ### POST /api/recommend
 ```json
 {
-  "user_id": "user_00001",
+  "user_id": "user_00001"
 }
 ```
 ## Build image
