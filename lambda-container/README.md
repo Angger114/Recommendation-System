@@ -7,7 +7,7 @@
 `MODEL_KEY=models/hybrid_model.pkl`
 
 ### Dynamo Tables
-`USERS_TABLE=techmart-users`<br/>
+`PRODUCTS_TABLE=ProductEmbeddings`<br/>
 
 ## API Endpoint
 ### POST /api/recommend
